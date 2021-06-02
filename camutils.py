@@ -274,8 +274,8 @@ def decode(imprefix,start,threshold, imprefixC, thresholdC):
         code = code + np.power(2,(nbits-i-1))*bcd[:,:,i]
         
     #subtract foreground from background to get pixels in object, using thresholdC
-    imgBackground = plt.imread(imprefixC+"00")
-    imgWithObject = plt.imread(imprefixC+"01")
+    imgBackground = plt.imread(imprefixC+"00.png")
+    imgWithObject = plt.imread(imprefixC+"01.png")
     colorMask = np.where(np.sum(np.square(imgBackground-imgWithObject), axis=-1)>thresholdC, 1, 0)
     
     return code,mask,colorMask
@@ -306,10 +306,10 @@ def reconstruct(imprefixL,imprefixR,threshold,camL,camR, imprefixLC, imprefixRC,
 
     """
 
-    CLh,maskLh, maskLC = decode(imprefixL,0,threshold)
-    CLv,maskLv, _ = decode(imprefixL,20,threshold) # we dont use this color mask
-    CRh,maskRh, maskRC = decode(imprefixR,0,threshold)
-    CRv,maskRv, _ = decode(imprefixR,20,threshold) # we dont use this color mask
+    CLh,maskLh, maskLC = decode(imprefixL,0,threshold, imprefixLC, thresholdC)
+    CLv,maskLv, _ = decode(imprefixL,20,threshold,imprefixLC, thresholdC) # we dont use this color mask
+    CRh,maskRh, maskRC = decode(imprefixR,0,threshold, imprefixRC, thresholdC)
+    CRv,maskRv, _ = decode(imprefixR,20,threshold,  imprefixRC, thresholdC) # we dont use this color mask
 
     CL = CLh + 1024*CLv
     maskL = maskLh*maskLv*maskLC
