@@ -87,7 +87,9 @@ def loadPoints(filename):
 
 def main():
     camL, camR = performCameraCalibration()
-    points = generatePoints(camL, camR, "./couple/grab_6_u")
+    print(camL)
+    print(camR)
+    points = generatePoints(camL, camR, "./couple/grab_0_u")
     #points = loadPoints("points.pickle")
     visualizePoints(points["pts3"], camL, camR, "./output.png")
 
