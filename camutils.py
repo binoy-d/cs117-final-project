@@ -353,8 +353,8 @@ def reconstruct(imprefixL,imprefixR,threshold,camL,camR, imprefixLC, imprefixRC,
 
     return pts2L,pts2R,pts3, colors
 
-def generateMesh(   boxlimits =  np.array([-1000,1000,-1000,1000,-1000,1000]), \
-                    trithresh = 1.5, \
+def generateMesh(   boxlimits =  np.array([-40,50,-40,20,-40,20]), \
+                    trithresh = 2, \
                     pts3 = np.array([]), \
                     pts2L = np.array([]), \
                     pts2R = np.array([]), \
@@ -389,7 +389,8 @@ def generateMesh(   boxlimits =  np.array([-1000,1000,-1000,1000,-1000,1000]), \
             for i in range(pts3.shape[1]):
                 pts3[:,i] = np.mean(pts3[:, neighbors(i, triL)], axis=1)
         return pts3
-    pts3 = smooth(5)
+
+    pts3 = smooth(4)
 
     #triangle pruning
     def distance(a, b):

@@ -93,6 +93,8 @@ def loadPoints(filename):
 def generatePlyFiles(directory):
     camL, camR = performCameraCalibration()
     for i in range(7):
+        if i == 5:
+            continue
         print(f"Scanning directory {i}")
         folder = f"grab_{i}_u"
         points = generatePoints(camL, camR, f"./{directory}/{folder}")
@@ -103,7 +105,7 @@ def generatePlyFiles(directory):
         writeply(pts3, colors, triangles, f"./{directory}_output/scan{i}.ply")
 
 def main():
-    generatePlyFiles("teapot")
+    generatePlyFiles("couple")
 
 
 if __name__ == '__main__':
