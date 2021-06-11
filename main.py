@@ -1,10 +1,11 @@
+from os import write
 from matplotlib import pyplot as plt
 from calibrate import calibrate
-from camutils import reconstruct, Camera, calibratePose, makerotation
+from camutils import reconstruct, Camera, calibratePose, makerotation, generateMesh
 import pickle
 import numpy as np
 from cv2 import findChessboardCorners
-
+from meshutils import writeply
 
 def performCameraCalibration():
     '''
@@ -54,16 +55,19 @@ def generatePoints(camL, camR, imprefix):
     imprefixRC = imprefix+"/color_C1_"
     threshold = 0.02
     thresholdC = 0.01
-    pts2L,pts2R,pts3 = reconstruct(imprefixL,imprefixR,threshold,camL,camR, imprefixLC, imprefixRC, thresholdC)
+    pts2L,pts2R,pts3, colors = reconstruct(imprefixL,imprefixR,threshold,camL,camR, imprefixLC, imprefixRC, thresholdC)
     data = {
         "pts2L": pts2L,
         "pts2R": pts2R,
-        "pts3": pts3
+        "pts3": pts3,
+        "colors": colors
     }
     with open("./points.pickle", "wb") as f:
         pickle.dump(data, f)    
     print("done generating points")
     return data
+
+    
 def visualizePoints(pts3, camL, camR, outFileName):
     lookL = np.hstack((camL.t,camL.t+camL.R @ np.array([[0,0,100]]).T))
     lookR = np.hstack((camR.t,camR.t+camR.R @ np.array([[0,0,100]]).T))
@@ -85,13 +89,21 @@ def loadPoints(filename):
         data = pickle.load(f)
     return data
 
-def main():
+
+def generatePlyFiles(directory):
     camL, camR = performCameraCalibration()
-    print(camL)
-    print(camR)
-    points = generatePoints(camL, camR, "./couple/grab_0_u")
-    #points = loadPoints("points.pickle")
-    visualizePoints(points["pts3"], camL, camR, "./output.png")
+    for i in range(7):
+        print(f"Scanning directory {i}")
+        folder = f"grab_{i}_u"
+        points = generatePoints(camL, camR, f"./{directory}/{folder}")
+        pts3, triangles, colors = generateMesh(pts3=points["pts3"],
+                        pts2L = points["pts2L"],
+                        pts2R = points["pts2R"],
+                        colors = points["colors"])
+        writeply(pts3, colors, triangles, f"./{directory}_output/scan{i}.ply")
+
+def main():
+    generatePlyFiles("teapot")
 
 
 if __name__ == '__main__':

@@ -1,6 +1,9 @@
 import numpy as np
 import scipy.optimize
 import matplotlib.pyplot as plt
+from scipy.spatial import Delaunay
+from numpy.linalg import norm
+
 
 def makerotation(rx,ry,rz):
     """
@@ -233,7 +236,6 @@ def decode(imprefix,start,threshold, imprefixC, thresholdC):
         
     mask : 2D numpy.array (dtype=float)
     
-    
     """
     nbits = 10
     
@@ -304,8 +306,10 @@ def reconstruct(imprefixL,imprefixR,threshold,camL,camR, imprefixLC, imprefixRC,
 
     pts3 : 2D numpy.array (dtype=float)
 
-    """
+    colors: 2D numpy.array(dtype=float) shape = 3*N
 
+    """
+    #CR, CL = code R and code L(binary light code)
     CLh,maskLh, maskLC = decode(imprefixL,0,threshold, imprefixLC, thresholdC)
     CLv,maskLv, _ = decode(imprefixL,20,threshold,imprefixLC, thresholdC) # we dont use this color mask
     CRh,maskRh, maskRC = decode(imprefixR,0,threshold, imprefixRC, thresholdC)
@@ -337,8 +341,80 @@ def reconstruct(imprefixL,imprefixR,threshold,camL,camR, imprefixLC, imprefixRC,
     pts2R = np.concatenate((xx[matchR].T,yy[matchR].T),axis=0)
     pts2L = np.concatenate((xx[matchL].T,yy[matchL].T),axis=0)
 
+    #record colors for each pixel
+    imgL = plt.imread(imprefixLC+"01.png")
+    imgR = plt.imread(imprefixRC+"01.png")
+    
+    colorsL = imgL[pts2L[1], pts2L[0]].T
+    colorsR = imgR[pts2R[1], pts2R[0]].T
+
+    colors = (colorsR+colorsL)/2
     pts3 = triangulate(pts2L,camL,pts2R,camR)
 
-    return pts2L,pts2R,pts3
+    return pts2L,pts2R,pts3, colors
+
+def generateMesh(   boxlimits =  np.array([-1000,1000,-1000,1000,-1000,1000]), \
+                    trithresh = 1.5, \
+                    pts3 = np.array([]), \
+                    pts2L = np.array([]), \
+                    pts2R = np.array([]), \
+                    colors = np.array([])
+                    ):
+    
+    #bounding box pruning
+    
+    def is_in_limits(point):
+        return  point[0]>boxlimits[0] and point[0]<boxlimits[1] and point[1]>boxlimits[2] and \
+                point[1]<boxlimits[3] and point[2]>boxlimits[4] and point[2]<boxlimits[5]
+
+    keep = np.array([i for i in range(pts3.shape[1]) if is_in_limits(pts3[:, i])])
+
+    pts3 = pts3[:, keep]
+    pts2L = pts2L[:, keep]
+    pts2R = pts2R[:,  keep]
+    colors = colors[:, keep]
+
+    
+    #trianglate 2d points to get surface mesh
+    triL=Delaunay(pts2L.T)
+    simp = triL.simplices
+
+    #TODO: mesh smoothing
+    def neighbors(i, triangle):
+        return triangle.vertex_neighbor_vertices[1]\
+                [triangle.vertex_neighbor_vertices[0][i]:triangle.vertex_neighbor_vertices[0][i+1]]
+    def smooth(level):
+        for j in range(level):
+            print(f"applying smoothing level {j}")
+            for i in range(pts3.shape[1]):
+                pts3[:,i] = np.mean(pts3[:, neighbors(i, triL)], axis=1)
+        return pts3
+    pts3 = smooth(5)
+
+    #triangle pruning
+    def distance(a, b):
+        return np.sqrt(np.sum(np.power(pts3[:,simp[:,a]]-pts3[:,simp[:,b]],2),axis=0))
+
+    goodtri = (distance(0, 1)<trithresh)&(distance(0, 2)<trithresh)&(distance(1,2)<trithresh)
+    simp = simp[goodtri,:]
+
+    # remove any points which are not referenced in any triangle
+    #
+    #use np.unique applied to tri array to get a compact list of all vertices that are referenced:
+    tokeep=np.unique(simp)
+    map = np.zeros(pts3.shape[1])
+    pts3=pts3[:,tokeep]
+    colors = colors[:,tokeep]
+
+    #update tri
+    map[tokeep] = np.arange(0,tokeep.shape[0])
+    simp=map[simp]
+
+
+    print(simp.shape)
+    print(pts3.shape)
+    print(colors.shape)
+    
+    return pts3, simp, colors
 
 
