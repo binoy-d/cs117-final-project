@@ -2,8 +2,6 @@ import numpy as np
 import scipy.optimize
 import matplotlib.pyplot as plt
 from scipy.spatial import Delaunay
-from numpy.linalg import norm
-
 
 def makerotation(rx,ry,rz):
     """
@@ -381,8 +379,8 @@ def generateMesh(   boxlimits =  np.array([-40,50,-40,20,-40,20]), \
 
     #TODO: mesh smoothing
     def neighbors(i, triangle):
-        return triangle.vertex_neighbor_vertices[1]\
-                [triangle.vertex_neighbor_vertices[0][i]:triangle.vertex_neighbor_vertices[0][i+1]]
+        return triangle.vertex_neighbor_vertices[1][triangle.vertex_neighbor_vertices[0][i]:triangle.vertex_neighbor_vertices[0][i+1]]
+    
     def smooth(level):
         for j in range(level):
             print(f"applying smoothing level {j}")
@@ -396,19 +394,17 @@ def generateMesh(   boxlimits =  np.array([-40,50,-40,20,-40,20]), \
     def distance(a, b):
         return np.sqrt(np.sum(np.power(pts3[:,simp[:,a]]-pts3[:,simp[:,b]],2),axis=0))
 
-    goodtri = (distance(0, 1)<trithresh)&(distance(0, 2)<trithresh)&(distance(1,2)<trithresh)
-    simp = simp[goodtri,:]
+    keep = (distance(0, 1)<trithresh)&(distance(0, 2)<trithresh)&(distance(1,2)<trithresh)
+    simp = simp[keep,:]
 
     # remove any points which are not referenced in any triangle
-    #
-    #use np.unique applied to tri array to get a compact list of all vertices that are referenced:
-    tokeep=np.unique(simp)
+    keep=np.unique(simp)
     map = np.zeros(pts3.shape[1])
-    pts3=pts3[:,tokeep]
-    colors = colors[:,tokeep]
+    pts3=pts3[:,keep]
+    colors = colors[:,keep]
 
     #update tri
-    map[tokeep] = np.arange(0,tokeep.shape[0])
+    map[keep] = np.arange(0,keep.shape[0])
     simp=map[simp]
 
 

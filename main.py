@@ -1,6 +1,5 @@
 from os import write
 from matplotlib import pyplot as plt
-from calibrate import calibrate
 from camutils import reconstruct, Camera, calibratePose, makerotation, generateMesh
 import pickle
 import numpy as np
@@ -62,32 +61,9 @@ def generatePoints(camL, camR, imprefix):
         "pts3": pts3,
         "colors": colors
     }
-    with open("./points.pickle", "wb") as f:
-        pickle.dump(data, f)    
     print("done generating points")
     return data
 
-    
-def visualizePoints(pts3, camL, camR, outFileName):
-    lookL = np.hstack((camL.t,camL.t+camL.R @ np.array([[0,0,100]]).T))
-    lookR = np.hstack((camR.t,camR.t+camR.R @ np.array([[0,0,100]]).T))
-    #3d
-    fig = plt.figure(figsize=(15,10))
-    ax = fig.add_subplot(221, projection='3d')
-    ax.plot(pts3[0,:],pts3[1,:],pts3[2,:],'.')
-    ax.plot(camL.t[0],camL.t[1],camL.t[2],'bo')
-    ax.plot(camR.t[0],camR.t[1],camR.t[2],'ro')
-    ax.plot(lookL[0,:],lookL[1,:],lookL[2,:],'b')
-    ax.plot(lookR[0,:],lookR[1,:],lookR[2,:],'r')
-    plt.title('scene 3D view')
-    plt.show()
-    plt.savefig(outFileName)
-
-def loadPoints(filename):
-    data = {}
-    with open(filename, "rb") as f:
-        data = pickle.load(f)
-    return data
 
 
 def generatePlyFiles(directory):
